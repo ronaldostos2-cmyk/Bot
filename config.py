@@ -1,47 +1,29 @@
-# config.py (revisado e organizado)
-
 # =========================
-# 🔑 Binance API (Testnet ou Real)
+# CONFIGURAÇÕES GERAIS - NÍVEL 3
 # =========================
-API_KEY = "SUA_API_KEY_TESTNET"
-API_SECRET = "SEU_API_SECRET_TESTNET"
 
-# Para futures testnet
-BASE_URL = "https://testnet.binancefuture.com"
-# Para produção: comente a linha acima e use:
-# BASE_URL = "https://fapi.binance.com"
+API_KEY = "d47789171a725c0b7becb283a989f44963698d6349a857a33d6e56750823f364"       # <- coloque sua API aqui
+API_SECRET = "b217fe9799c0fa744c7c9703d3f6b55b09ef7c92c927cb25d8b2e890c73dbcce" # <- coloque sua SECRET aqui
 
+BASE_URL = "https://testnet.binancefuture.com"  # Testnet URL
+PAIRS = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]       # Pares a operar
 
-# =========================
-# 📈 Trading (ativos e timeframes)
-# =========================
-TRADING_PAIRS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "ADAUSDT"]
-TIMEFRAMES = ["1m", "5m", "15m"]  
+# Percentual base do saldo por trade
+BASE_RISK_PERCENT = 0.05
 
+# Stop Loss / Take Profit base (ajustáveis dinamicamente)
+BASE_STOP_LOSS = 0.02
+BASE_TAKE_PROFIT = 0.04
 
-# =========================
-# ⚖️ Estratégia e Indicadores
-# =========================
-STOP_LOSS_ATR_MULTIPLIER = 1.5   # multiplicador do ATR para SL
-TAKE_PROFIT_ATR_MULTIPLIER = 3   # multiplicador do ATR para TP
+# Intervalos de velas
+INTERVAL_SHORT = '15m'  # curto prazo
+INTERVAL_LONG = '1h'    # médio prazo
 
+# Alertas no terminal
+ALERTS = True
 
-# =========================
-# 🛡️ Gerenciamento de risco
-# =========================
-RISK_PERCENT = 1.0             # % do saldo arriscado por trade
-MAX_DAILY_LOSS_PERCENT = 5.0   # % máximo de perda diária antes de parar o bot
-MAX_POSITION_SIZE = 2.0        # % máximo do saldo em UMA posição (protege contra alavancagem excessiva)
+# Sequência máxima de perdas antes do cooldown
+MAX_CONSECUTIVE_LOSSES = 3
 
-
-# =========================
-# 📢 Alertas (Telegram)
-# =========================
-TELEGRAM_TOKEN = ""       # Coloque seu token de bot do Telegram
-TELEGRAM_CHAT_ID = ""     # Seu chat_id
-
-
-# =========================
-# ⚙️ Outros
-# =========================
-QUANTITY_DEFAULT = 0.001  # quantidade mínima default para evitar zero
+# Mínimo de volatilidade para operar (ATR)
+MIN_ATR_MULTIPLIER = 1.0

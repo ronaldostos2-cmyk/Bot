@@ -1,57 +1,55 @@
-# main.py (revisado)
 import time
-from bot_thread import BotThread
-from config import TRADING_PAIRS
-from utils import summarize_daily, init_db
-from statistics import summarize_statistics
-from alerts import send_telegram
+import pandas as pd
+from binance.client import Client
+from config import API_KEY, API_SECRET, PAIRS, INTERVAL_SHORT, INTERVAL_LONG, ALERTS
+from strategy import multi_time_strategy
+from trader import place_order, get_balance
+from logger import log_trade, summary_report
 
-threads = []
+client = Client(API_KEY, API_SECRET, testnet=True)
 
+def get_klines(symbol, interval='15m', limit=100):
+    """Obtém dados históricos de candles da Binance Futures Testnet"""
+    candles = client.futures_klines(symbol=symbol, interval=interval, limit=limit)
+    df = pd.DataFrame(candles, columns=[
+        'time', 'open', 'high', 'low', 'close', 'volume',
+        'close_time', 'qav', 'num_trades', 'taker_base', 'taker_quote', 'ignore'
+    ])
+    df['open'] = df['open'].astype(float)
+    df['high'] = df['high'].astype(float)
+    df['low'] = df['low'].astype(float)
+    df['close'] = df['close'].astype(float)
+    df['volume'] = df['volume'].astype(float)
+    return df
 
-def start_bots():
-    """
-    Inicializa bots para cada par configurado.
-    """
-    init_db()  # garante que o banco está pronto
-    for pair in TRADING_PAIRS:
-        bot = BotThread(pair)
-        bot.start()
-        threads.append(bot)
-        print(f"[MAIN] ✅ Bot iniciado para {pair}")
-        send_telegram(f"Bot iniciado para {pair}")
+def run_bot():
+    print("🤖 Bot Trader Nível 3 iniciado... Rodando em loop infinito!\n")
+    while True:
+        for pair in PAIRS:
+            print(f"📊 Analisando {pair}...")
 
+            # Dados curto e médio prazo
+            df_short = get_klines(pair, INTERVAL_SHORT)
+            df_long = get_klines(pair, INTERVAL_LONG)
 
-def stop_bots():
-    """
-    Para todos os bots com segurança.
-    """
-    print("\n[MAIN] Encerrando bots...")
-    send_telegram("⏹ Encerrando todos os bots...")
+            # Gerar sinal
+            signal = multi_time_strategy(df_short, df_long)
+            last_price = df_short['close'].iloc[-1]
 
-    for bot in threads:
-        bot.stop()
-    for bot in threads:
-        bot.join()
+            if signal in ["BUY", "SELL"]:
+                order = place_order(pair, signal, last_price, df_short)
+                if order:
+                    balance = get_balance()
+                    if ALERTS:
+                        print(f"📈 Sinal: {signal} | {pair} | Preço: {last_price} | Saldo: {balance}")
+                    log_trade(pair, signal, last_price, order['origQty'], "Executado", pnl=None, balance=balance)
+            else:
+                print(f"⏸️ Nenhum sinal em {pair}")
 
-    # Gera resumos
-    summarize_daily()
-    summarize_statistics()
-    send_telegram("📊 Resumo diário e estatísticas enviadas. Todos os bots encerrados.")
-    print("[MAIN] ✅ Todos os bots encerrados.")
-
+        # Resumo periódico no terminal
+        summary_report()
+        print("\n🔄 Aguardando próximo ciclo...\n")
+        time.sleep(60)  # Espera 1 minuto entre ciclos; ajuste conforme necessidade
 
 if __name__ == "__main__":
-    try:
-        start_bots()
-        print("[MAIN] Bots rodando. Pressione Ctrl+C para encerrar.")
-        while True:
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        stop_bots()
-
-    except Exception as e:
-        print(f"[MAIN] ❌ Erro crítico: {e}")
-        send_telegram(f"[MAIN] ❌ Erro crítico: {e}")
-        stop_bots()
+    run_bot()
